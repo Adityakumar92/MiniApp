@@ -40,10 +40,11 @@ JWT_SECRET='your_secret_key'
 4. Start the backend server:
 npm run dev or npm start
 
----
+```
 
 ##  🛠 Frontend Setup
 
+``` bash
 1. cd frontend
 
 2. Install dependencies:
