@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { FaEdit, FaTrash } from "react-icons/fa";
 
 const AskQuestion = () => {
   const [showForm, setShowForm] = useState(false);
@@ -11,8 +12,10 @@ const AskQuestion = () => {
   const [userQuestions, setUserQuestions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [editingId, setEditingId] = useState(null);
 
   const token = localStorage.getItem("token");
+  const user = JSON.parse(localStorage.getItem("user")); 
 
   const fetchUserQuestions = async () => {
     setLoading(true);
@@ -51,19 +54,42 @@ const AskQuestion = () => {
 
     try {
       setSubmitting(true);
-      const res = await axios.post(
-        "http://localhost:8080/questions",
-        { title, description, tags },
-        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
-      );
 
-      toast.success("Question submitted successfully!");
+      if (editingId) {
+        // update existing
+        const res = await axios.patch(
+          `http://localhost:8080/questions/${editingId}`,
+          { title, description, tags },
+          { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+        );
+        toast.success("Question updated successfully!");
+        setUserQuestions((prev) =>
+          prev.map((q) =>
+            q._id === editingId ? res.data.question : q
+          )
+        );
+      } else {
+        // create new
+        const res = await axios.post(
+          "http://localhost:8080/questions",
+          { title, description, tags },
+          { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+        );
+        const newQuestion = {
+          ...res.data.question,
+          createdBy: { name: user?.name || "You" },
+        };
+
+        toast.success("Question submitted successfully!");
+        setUserQuestions([newQuestion, ...userQuestions]);
+      }
+
+      // Reset
       setTitle("");
       setDescription("");
       setTags([]);
       setShowForm(false);
-
-      setUserQuestions([res.data.question, ...userQuestions]);
+      setEditingId(null);
     } catch (error) {
       console.error("Failed to submit question:", error);
       toast.error("Failed to submit question");
@@ -72,12 +98,41 @@ const AskQuestion = () => {
     }
   };
 
+  const handleEdit = (q) => {
+    setEditingId(q._id);
+    setTitle(q.title);
+    setDescription(q.description);
+    setTags(q.tags || []);
+    setShowForm(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this question?"))
+      return;
+    try {
+      await axios.delete(`http://localhost:8080/questions/${id}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      setUserQuestions(userQuestions.filter((q) => q._id !== id));
+      toast.success("Question deleted successfully!");
+    } catch (error) {
+      console.error("Delete failed:", error);
+      toast.error("Failed to delete question");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pt-24 px-6">
       <div className="max-w-5xl mx-auto">
         <div className="mb-6">
           <button
-            onClick={() => setShowForm(!showForm)}
+            onClick={() => {
+              setShowForm(!showForm);
+              setEditingId(null);
+              setTitle("");
+              setDescription("");
+              setTags([]);
+            }}
             className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition"
           >
             {showForm ? "Close Form" : "Ask a Question"}
@@ -120,6 +175,7 @@ const AskQuestion = () => {
                   </span>
                 ))}
               </div>
+
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -143,7 +199,11 @@ const AskQuestion = () => {
                   submitting ? "cursor-not-allowed bg-gray-400" : ""
                 }`}
               >
-                {submitting ? "Submitting..." : "Submit Question"}
+                {submitting
+                  ? "Submitting..."
+                  : editingId
+                  ? "Update Question"
+                  : "Submit Question"}
               </button>
             </form>
           )}
@@ -161,7 +221,19 @@ const AskQuestion = () => {
                 key={q._id}
                 className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition cursor-pointer"
               >
-                <h3 className="text-xl font-semibold mb-2">{q.title}</h3>
+                <div className="flex justify-between items-start">
+                  <h3 className="text-xl font-semibold mb-2">{q.title}</h3>
+                  <div className="flex gap-3 text-gray-500">
+                    <FaEdit
+                      onClick={() => handleEdit(q)}
+                      className="cursor-pointer hover:text-indigo-600"
+                    />
+                    <FaTrash
+                      onClick={() => handleDelete(q._id)}
+                      className="cursor-pointer hover:text-red-600"
+                    />
+                  </div>
+                </div>
                 <p className="text-gray-600 line-clamp-3">{q.description}</p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {q.tags?.map((tag, i) => (
@@ -174,7 +246,7 @@ const AskQuestion = () => {
                   ))}
                 </div>
                 <p className="text-sm text-gray-500 mt-2">
-                  Posted by: {q.createdBy?.name || "Unknown"}
+                  Posted by: {q.createdBy?.name || "You"}
                 </p>
               </div>
             ))}

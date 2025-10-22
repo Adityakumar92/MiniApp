@@ -14,8 +14,7 @@ const Dashboard = () => {
   const [editingText, setEditingText] = useState("");
 
   const token = localStorage.getItem("token");
-  const user = localStorage.getItem("user"); // store userId in localStorage on login
-  const userObj = JSON.parse(localStorage.getItem("user"));
+  const userObj = JSON.parse(localStorage.getItem("user")); // store user details (name, id) on login
 
   // Fetch all questions
   const fetchQuestions = async () => {
@@ -76,8 +75,15 @@ const Dashboard = () => {
         { summary },
         { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
+
+      // ✅ Inject current user info so it doesn’t show "Anonymous"
+      const newInsight = {
+        ...res.data.insight,
+        createdBy: { name: userObj?.name || "You", _id: userObj?.id },
+      };
+
       toast.success("Insight added successfully!");
-      setInsights([res.data.insight, ...insights]);
+      setInsights([newInsight, ...insights]);
       setSummary("");
     } catch (error) {
       console.error("Failed to submit insight:", error);
@@ -126,9 +132,7 @@ const Dashboard = () => {
         { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
       toast.success("Insight updated successfully!");
-      setInsights(
-        insights.map((i) => (i._id === id ? res.data.insight : i))
-      );
+      setInsights(insights.map((i) => (i._id === id ? res.data.insight : i)));
       cancelEditing();
     } catch (error) {
       console.error("Failed to update insight:", error);
@@ -245,10 +249,12 @@ const Dashboard = () => {
                       <div>
                         <p>{i.summary}</p>
                         <p className="text-sm text-gray-500 mt-2">
-                          — {i.createdBy?.name || "Anonymous"} |{" "}
+                          — {i.createdBy?.name || "You"} |{" "}
                           {new Date(i.createdAt).toLocaleString()}
                         </p>
-                        {i.createdBy._id === userObj.id && (
+
+                        {/* Only show actions if this user created it */}
+                        {!loading && i.createdBy?._id === userObj?.id && (
                           <div className="absolute top-2 right-2 flex gap-2">
                             <button
                               onClick={() => startEditing(i._id, i.summary)}

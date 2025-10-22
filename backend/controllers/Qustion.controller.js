@@ -131,7 +131,7 @@ const getAllQuestionsByCurrentUser = async (req, res) => {
             .populate('createdBy', 'name email role')
             .sort({ createdAt: -1 });
 
-        if (!questions || questions.length === 0) {
+        if (!questions) {
             return res.status(404).json({ message: 'No questions found for this user' });
         }
 
