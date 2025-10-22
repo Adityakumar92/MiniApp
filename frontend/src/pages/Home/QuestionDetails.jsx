@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import axios from "axios";
+import api from "../../api/api";
 import { toast } from "react-toastify";
 import { FiEdit, FiTrash2, FiCheck, FiX } from "react-icons/fi";
 
@@ -21,7 +21,7 @@ const QuestionDetails = () => {
   const fetchQuestionDetails = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`http://localhost:8080/questions/${id}`, {
+      const res = await api.get(`/questions/${id}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       setQuestion(res.data.question);
@@ -36,7 +36,7 @@ const QuestionDetails = () => {
   // Fetch all answers for the question
   const fetchAnswers = async () => {
     try {
-      const res = await axios.get(`http://localhost:8080/answers/${id}`, {
+      const res = await api.get(`/answers/${id}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       setAnswers(res.data);
@@ -58,8 +58,8 @@ const QuestionDetails = () => {
 
     try {
       setSubmitting(true);
-      const res = await axios.post(
-        `http://localhost:8080/answers/${id}`,
+      const res = await api.post(
+        `/answers/${id}`,
         { content: newAnswer },
         { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
@@ -97,8 +97,8 @@ const QuestionDetails = () => {
   const saveEditedAnswer = async (id) => {
     if (!editingText.trim()) return;
     try {
-      const res = await axios.patch(
-        `http://localhost:8080/answers/${id}`,
+      const res = await api.patch(
+        `/answers/${id}`,
         { answer: editingText },
         { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
@@ -120,7 +120,7 @@ const QuestionDetails = () => {
   const deleteAnswer = async (id) => {
     if (!window.confirm("Are you sure you want to delete this answer?")) return;
     try {
-      await axios.delete(`http://localhost:8080/answers/${id}`, {
+      await api.delete(`/answers/${id}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       toast.success("Answer deleted successfully!");

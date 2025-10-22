@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../../api/api";
 import { toast } from "react-toastify";
 import { FaEdit, FaTrash } from "react-icons/fa";
 
@@ -20,7 +20,7 @@ const AskQuestion = () => {
   const fetchUserQuestions = async () => {
     setLoading(true);
     try {
-      const res = await axios.get("http://localhost:8080/questions/byuser", {
+      const res = await api.get("/questions/byuser", {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       setUserQuestions(res.data);
@@ -57,8 +57,8 @@ const AskQuestion = () => {
 
       if (editingId) {
         // update existing
-        const res = await axios.patch(
-          `http://localhost:8080/questions/${editingId}`,
+        const res = await api.patch(
+          `/questions/${editingId}`,
           { title, description, tags },
           { headers: token ? { Authorization: `Bearer ${token}` } : {} }
         );
@@ -70,8 +70,8 @@ const AskQuestion = () => {
         );
       } else {
         // create new
-        const res = await axios.post(
-          "http://localhost:8080/questions",
+        const res = await api.post(
+          "/questions",
           { title, description, tags },
           { headers: token ? { Authorization: `Bearer ${token}` } : {} }
         );
@@ -110,7 +110,7 @@ const AskQuestion = () => {
     if (!window.confirm("Are you sure you want to delete this question?"))
       return;
     try {
-      await axios.delete(`http://localhost:8080/questions/${id}`, {
+      await api.delete(`/questions/${id}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       setUserQuestions(userQuestions.filter((q) => q._id !== id));

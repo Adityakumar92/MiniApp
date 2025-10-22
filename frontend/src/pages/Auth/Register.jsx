@@ -1,4 +1,4 @@
-import axios from "axios";
+import api from "../../api/api";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -32,7 +32,7 @@ const Register = () => {
         role: roleValue,
       };
 
-      const res = await axios.post("http://localhost:8080/auth/register", payload);
+      const res = await api.post("/auth/register", payload);
       console.log("Response:", res.data);
 
       toast.success("Registration successful! Please login.");

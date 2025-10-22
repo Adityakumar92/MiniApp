@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../../api/api";
 import { toast } from "react-toastify";
 import { FiEdit, FiTrash2, FiCheck, FiX } from "react-icons/fi";
 
@@ -20,8 +20,8 @@ const Dashboard = () => {
   const fetchQuestions = async () => {
     setLoading(true);
     try {
-      const res = await axios.post(
-        "http://localhost:8080/questions/all",
+      const res = await api.post(
+        "/questions/all",
         {},
         { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
@@ -38,8 +38,8 @@ const Dashboard = () => {
   const fetchInsights = async (questionId) => {
     setLoading(true);
     try {
-      const res = await axios.get(
-        `http://localhost:8080/insights/${questionId}`,
+      const res = await api.get(
+        `/insights/${questionId}`,
         { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
       setInsights(res.data);
@@ -70,8 +70,8 @@ const Dashboard = () => {
 
     try {
       setSubmitting(true);
-      const res = await axios.post(
-        `http://localhost:8080/insights/${selectedQuestion._id}`,
+      const res = await api.post(
+        `/insights/${selectedQuestion._id}`,
         { summary },
         { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
@@ -98,7 +98,7 @@ const Dashboard = () => {
     if (!window.confirm("Are you sure you want to delete this insight?")) return;
 
     try {
-      await axios.delete(`http://localhost:8080/insights/${id}`, {
+      await api.delete(`/insights/${id}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       toast.success("Insight deleted successfully!");
@@ -126,8 +126,8 @@ const Dashboard = () => {
     if (!editingText.trim()) return;
 
     try {
-      const res = await axios.patch(
-        `http://localhost:8080/insights/${id}`,
+      const res = await api.patch(
+        ` /insights/${id}`,
         { summary: editingText },
         { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );

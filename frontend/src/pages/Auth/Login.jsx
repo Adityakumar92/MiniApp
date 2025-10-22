@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../../api/api";
 import { toast } from "react-toastify";
 
 const Login = () => {
@@ -15,7 +15,7 @@ const Login = () => {
 
     try {
       const payload = { email, password };
-      const res = await axios.post("http://localhost:8080/auth/login", payload);
+      const res = await api.post("/auth/login", payload);
 
       if (!res.data.success) {
         toast.error(res.data.message || "Login failed!");

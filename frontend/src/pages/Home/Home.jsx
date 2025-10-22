@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../../api/api";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
@@ -17,8 +17,8 @@ const Home = () => {
   try {
     const token = localStorage.getItem("token");
 
-    const res = await axios.post(
-      "http://localhost:8080/questions/all",
+    const res = await api.post(
+      "/questions/all",
       { search, tags },
       {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
