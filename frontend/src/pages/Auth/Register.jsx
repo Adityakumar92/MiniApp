@@ -13,6 +13,13 @@ const Register = () => {
 
   const handleRegister = async (e) => {
     e.preventDefault();
+
+    // ✅ Password validation before setting loading
+    if (password.trim().length < 6) {
+      toast.error("Password must be at least 6 characters long.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -75,7 +82,7 @@ const Register = () => {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
+              placeholder="Enter your password (min 6 characters)"
               required
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />

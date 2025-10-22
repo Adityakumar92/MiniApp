@@ -2,16 +2,20 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { FiEdit, FiTrash2, FiCheck, FiX } from "react-icons/fi";
 
 const QuestionDetails = () => {
-  const { id } = useParams(); // question id from URL
+  const { id } = useParams();
   const [question, setQuestion] = useState(null);
   const [answers, setAnswers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [newAnswer, setNewAnswer] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [editingAnswerId, setEditingAnswerId] = useState(null);
+  const [editingText, setEditingText] = useState("");
 
   const token = localStorage.getItem("token");
+  const userObj = JSON.parse(localStorage.getItem("user")); // logged-in user
 
   // Fetch question details
   const fetchQuestionDetails = async () => {
@@ -32,10 +36,9 @@ const QuestionDetails = () => {
   // Fetch all answers for the question
   const fetchAnswers = async () => {
     try {
-      const res = await axios.get(
-        `http://localhost:8080/answers/${id}`,
-        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
-      );
+      const res = await axios.get(`http://localhost:8080/answers/${id}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       setAnswers(res.data);
     } catch (error) {
       console.error("Failed to fetch answers:", error);
@@ -48,7 +51,7 @@ const QuestionDetails = () => {
     fetchAnswers();
   }, [id]);
 
-  // Submit a new answer
+  // Submit new answer
   const handleSubmitAnswer = async (e) => {
     e.preventDefault();
     if (!newAnswer.trim()) return;
@@ -57,17 +60,74 @@ const QuestionDetails = () => {
       setSubmitting(true);
       const res = await axios.post(
         `http://localhost:8080/answers/${id}`,
-        { content: newAnswer }, // matches your controller
+        { content: newAnswer },
         { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
+
+      // Inject user info so "Anonymous" doesn't appear
+      const newAnswerObj = {
+        ...res.data,
+        createdBy: { name: userObj?.name || "You", _id: userObj?.id },
+      };
+
       toast.success("Answer submitted!");
+      setAnswers([newAnswerObj, ...answers]);
       setNewAnswer("");
-      setAnswers([res.data.answer, ...answers]); // update answers immediately
     } catch (error) {
       console.error("Failed to submit answer:", error);
       toast.error("Failed to submit answer");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // Start editing
+  const startEditing = (answerId, currentText) => {
+    setEditingAnswerId(answerId);
+    setEditingText(currentText);
+  };
+
+  // Cancel editing
+  const cancelEditing = () => {
+    setEditingAnswerId(null);
+    setEditingText("");
+  };
+
+  // Save edited answer
+  const saveEditedAnswer = async (id) => {
+    if (!editingText.trim()) return;
+    try {
+      const res = await axios.patch(
+        `http://localhost:8080/answers/${id}`,
+        { answer: editingText },
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
+
+      toast.success("Answer updated successfully!");
+      setAnswers(
+        answers.map((a) =>
+          a._id === id ? { ...res.data.answer, createdBy: a.createdBy } : a
+        )
+      );
+      cancelEditing();
+    } catch (error) {
+      console.error("Failed to update answer:", error);
+      toast.error("Failed to update answer");
+    }
+  };
+
+  // Delete answer
+  const deleteAnswer = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this answer?")) return;
+    try {
+      await axios.delete(`http://localhost:8080/answers/${id}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      toast.success("Answer deleted successfully!");
+      setAnswers(answers.filter((a) => a._id !== id));
+    } catch (error) {
+      console.error("Failed to delete answer:", error);
+      toast.error("Failed to delete answer");
     }
   };
 
@@ -81,7 +141,9 @@ const QuestionDetails = () => {
     <div className="min-h-screen bg-gray-50 pt-24 px-6">
       <div className="max-w-4xl mx-auto bg-white shadow-md rounded-lg p-8">
         {/* Question */}
-        <h1 className="text-3xl font-bold mb-4 text-gray-800">{question.title}</h1>
+        <h1 className="text-3xl font-bold mb-4 text-gray-800">
+          {question.title}
+        </h1>
         <p className="text-gray-700 mb-6">{question.description}</p>
 
         <div className="flex flex-wrap gap-2 mb-6">
@@ -127,7 +189,9 @@ const QuestionDetails = () => {
         </form>
 
         {/* Answers */}
-        <h2 className="text-xl font-semibold mb-4">Answers ({answers.length})</h2>
+        <h2 className="text-xl font-semibold mb-4">
+          Answers ({answers.length})
+        </h2>
         {answers.length === 0 ? (
           <p className="text-gray-500">No answers yet.</p>
         ) : (
@@ -135,12 +199,56 @@ const QuestionDetails = () => {
             {answers.map((a) => (
               <div
                 key={a._id}
-                className="bg-gray-50 p-4 rounded-md border border-gray-200"
+                className="bg-gray-50 p-4 rounded-md border border-gray-200 relative"
               >
-                <p className="text-gray-700">{a.content || a.answer}</p>
-                <p className="text-sm text-gray-500 mt-2">
-                  — {a.createdBy?.name || "Anonymous"}
-                </p>
+                {editingAnswerId === a._id ? (
+                  <div>
+                    <textarea
+                      value={editingText}
+                      onChange={(e) => setEditingText(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 mb-2"
+                      rows={3}
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => saveEditedAnswer(a._id)}
+                        className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 flex items-center gap-1"
+                      >
+                        <FiCheck /> Save
+                      </button>
+                      <button
+                        onClick={cancelEditing}
+                        className="bg-gray-300 text-gray-700 px-3 py-1 rounded hover:bg-gray-400 flex items-center gap-1"
+                      >
+                        <FiX /> Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-gray-700">{a.answer || a.content}</p>
+                    <p className="text-sm text-gray-500 mt-2">
+                      — {a.createdBy?.name || "Anonymous"} |{" "}
+                      {new Date(a.createdAt).toLocaleString()}
+                    </p>
+                    {a.createdBy?._id === userObj?.id && (
+                      <div className="absolute top-2 right-2 flex gap-2">
+                        <button
+                          onClick={() => startEditing(a._id, a.answer || a.content)}
+                          className="text-blue-500 hover:text-blue-700"
+                        >
+                          <FiEdit />
+                        </button>
+                        <button
+                          onClick={() => deleteAnswer(a._id)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <FiTrash2 />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>
