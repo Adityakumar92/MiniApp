@@ -3,7 +3,7 @@ import Login from "../pages/Auth/Login";
 import Register from "../pages/Auth/Register";
 import PrivateRoute from "./PrivateRoute";
 import Layout from "../pages/Layout";
-import Home from "../pages/Home/home";
+import Home from "../pages/Home/Home";
 import QuestionDetails from "../pages/Home/QuestionDetails";
 import AskQuestion from "../pages/AskQuestion/AskQuestion";
 import Dashboard from "../pages/Dashboard/Dashboard";
